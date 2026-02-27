@@ -17,10 +17,14 @@ func main() {
 	// Load .env if exists
 	godotenv.Load()
 
-	webPortEnv := os.Getenv("WEB_PORT")
+	webPortEnv := os.Getenv("PORT") // Railway default
+	if webPortEnv == "" {
+		webPortEnv = os.Getenv("WEB_PORT")
+	}
 	if webPortEnv == "" {
 		webPortEnv = "8080"
 	}
+
 	c2PortEnv := os.Getenv("C2_PORT")
 	if c2PortEnv == "" {
 		c2PortEnv = "5555"

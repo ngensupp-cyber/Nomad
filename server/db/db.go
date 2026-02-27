@@ -14,6 +14,9 @@ var DB *sql.DB
 func InitDB() {
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
+		dbURL = os.Getenv("DATABASE_URL")
+	}
+	if dbURL == "" {
 		dbURL = "postgres://nomad:nomad@localhost:5432/nomad_c2?sslmode=disable"
 	}
 

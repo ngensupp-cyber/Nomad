@@ -39,4 +39,4 @@ RUN go build -o nomad-c2 server/main.go
 EXPOSE 8080 5555 5037
 
 # Step 10: Run the server
-CMD ["./nomad-c2", "-port", "8080", "-c2port", "5555"]
+CMD ["./nomad-c2"]
