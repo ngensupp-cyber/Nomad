@@ -30,7 +30,7 @@ WORKDIR /app
 COPY . .
 
 # Step 8: Build the Go Server
-RUN go build -o nomad-c2 server/main.go
+RUN go mod tidy && go build -o nomad-c2 server/main.go
 
 # Step 9: Expose ports
 # 8080: Web UI & Payload delivery

