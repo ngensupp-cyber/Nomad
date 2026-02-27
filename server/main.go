@@ -72,6 +72,11 @@ func main() {
 	}
 
 	// Start C2 Listener
+	if _, err := os.Stat("payloads"); os.IsNotExist(err) {
+		os.Mkdir("payloads", 0755)
+	}
+	
+	log.Printf("[+] Auth mode: %v", os.Getenv("APP_PASSWORD") != "")
 	go c2.StartListener(*c2port)
 
 	// Start Web Server

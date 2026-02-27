@@ -2,6 +2,7 @@ package payload
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 )
