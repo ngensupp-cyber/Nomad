@@ -8,7 +8,19 @@ const App = () => {
   const [password, setPassword] = useState(localStorage.getItem('nomad_pass') || '');
 
   useEffect(() => {
-    axios.defaults.headers.common['X-Nomad-Pass'] = password;
+    // Basic validation to prevent "non ISO-8859-1 code point" error
+    const isASCII = (str) => /^[\x00-\x7F]*$/.test(str);
+
+    if (password && !isASCII(password)) {
+      console.warn("Nomad: Password contains non-ASCII characters which may fail in HTTP headers.");
+    }
+
+    try {
+      axios.defaults.headers.common['X-Nomad-Pass'] = password;
+    } catch (e) {
+      console.error("Critical: Failed to set auth header", e);
+    }
+
     fetchTargets();
     const interval = setInterval(fetchTargets, 5000);
     return () => clearInterval(interval);
@@ -170,7 +182,10 @@ const PayloadView = () => {
       link.remove();
     } catch (err) {
       console.error("Payload generation failed", err);
-      alert("Generation failed. Check server logs.");
+      const msg = err.response?.status === 401
+        ? "Unauthorized: Please enter the correct 'App Password' in System Settings."
+        : "Generation failed. Check server logs.";
+      alert(msg);
     } finally {
       setIsGenerating(false);
     }
@@ -266,25 +281,38 @@ const TerminalView = ({ targets }) => (
   </div>
 );
 
-const SettingsView = ({ password, onSave }) => (
-  <div className="max-w-2xl mx-auto glass p-10 rounded-[3rem] space-y-6 animate-in slide-in-from-bottom-10 duration-700">
-    <div className="text-center space-y-2">
-      <h3 className="text-2xl font-bold text-desert-primary">System Security</h3>
-      <p className="opacity-60">Manage your C2 access barriers.</p>
-    </div>
+const SettingsView = ({ password, onSave }) => {
+  const isASCII = (str) => /^[\x00-\x7F]*$/.test(str);
+  const isValid = isASCII(password);
 
-    <div className="space-y-4">
-      <label className="text-xs font-bold uppercase tracking-widest opacity-60 ml-2">App Password</label>
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => onSave(e.target.value)}
-        placeholder="Enter APP_PASSWORD from .env"
-        className="w-full glass bg-desert-900/50 p-4 rounded-2xl border-none outline-none focus:ring-1 ring-desert-primary/50 text-center text-xl tracking-widest"
-      />
-      <p className="text-[10px] opacity-40 text-center italic">This password is required to authorize all API actions.</p>
+  return (
+    <div className="max-w-2xl mx-auto glass p-10 rounded-[3rem] space-y-6 animate-in slide-in-from-bottom-10 duration-700">
+      <div className="text-center space-y-2">
+        <h3 className="text-2xl font-bold text-desert-primary">System Security</h3>
+        <p className="opacity-60">Manage your C2 access barriers.</p>
+      </div>
+
+      <div className="space-y-4">
+        <label className="text-xs font-bold uppercase tracking-widest opacity-60 ml-2">App Password</label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => onSave(e.target.value)}
+          placeholder="Enter APP_PASSWORD from .env"
+          className={`w-full glass bg-desert-900/50 p-4 rounded-2xl border-none outline-none focus:ring-1 text-center text-xl tracking-widest ${!isValid ? 'ring-red-500/50 text-red-400' : 'ring-desert-primary/50'
+            }`}
+        />
+        {!isValid && (
+          <p className="text-xs text-red-500 text-center font-bold animate-pulse">
+            ⚠️ Error: Only English letters and standard symbols allowed.
+          </p>
+        )}
+        <p className="text-[10px] opacity-40 text-center italic">
+          This password must match the <b>APP_PASSWORD</b> variable in your Railway dashboard.
+        </p>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default App;
