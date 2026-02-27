@@ -1,0 +1,9 @@
+.env
+*.exe
+*.bin
+nomad-c2
+node_modules/
+dist/
+payloads/
+agents/nomad_agent_*
+.DS_Store

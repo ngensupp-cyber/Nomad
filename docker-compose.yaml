@@ -1,0 +1,33 @@
+services:
+  server:
+    build: .
+    ports:
+      - "8080:8080"
+      - "5555:5555"
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - .env
+    environment:
+      - DB_URL=postgres://nomad:nomad@postgres:5432/nomad_c2?sslmode=disable
+      - REDIS_URL=redis:6379
+
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=nomad
+      - POSTGRES_PASSWORD=nomad
+      - POSTGRES_DB=nomad_c2
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
