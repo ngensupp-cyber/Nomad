@@ -30,6 +30,16 @@ func main() {
 		c2PortEnv = "5555"
 	}
 
+	// If both resolve to the same port (e.g. Railway sets PORT=5555), 
+	// we must use a different internal port for the C2 listener.
+	if webPortEnv == c2PortEnv {
+		if webPortEnv == "5555" {
+			c2PortEnv = "5556" // Shift C2 listener if Web takes 5555
+		} else {
+			webPortEnv = "8080" // Shift Web if it overlaps with custom C2
+		}
+	}
+
 	port := flag.String("port", webPortEnv, "Web UI port")
 	c2port := flag.String("c2port", c2PortEnv, "C2 Listener port")
 	flag.Parse()

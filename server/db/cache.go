@@ -17,9 +17,18 @@ func InitCache() {
 		redisURL = "localhost:6379"
 	}
 
-	RDB = redis.NewClient(&redis.Options{
-		Addr: redisURL,
-	})
+	if len(redisURL) > 8 && redisURL[:8] == "redis://" {
+		opt, err := redis.ParseURL(redisURL)
+		if err != nil {
+			log.Printf("Warning: Could not parse Redis URL: %v", err)
+			return
+		}
+		RDB = redis.NewClient(opt)
+	} else {
+		RDB = redis.NewClient(&redis.Options{
+			Addr: redisURL,
+		})
+	}
 
 	if err := RDB.Ping(Ctx).Err(); err != nil {
 		log.Printf("Warning: Could not connect to Redis: %v. Real-time features might be limited.", err)
