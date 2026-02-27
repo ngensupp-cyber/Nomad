@@ -1,31 +1,42 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme {
+  --color-desert-900: #1a120b;
+  --color-desert-800: #2d2013;
+  --color-desert-700: #3e2c1c;
+  --color-desert-primary: #e2725b;
+  --color-desert-accent: #f4a460;
+  --color-desert-text: #eadbc8;
 
-:root {
-  color-scheme: dark;
+  --font-desert: "Outfit", sans-serif;
 }
 
-body {
-  @apply bg-desert-900 text-desert-text font-desert;
-  margin: 0;
-  min-height: 100vh;
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-desert-900 text-desert-text font-desert;
+    margin: 0;
+    min-height: 100vh;
+  }
 }
 
-.glass {
+@utility glass {
   @apply bg-desert-800/40 backdrop-blur-md border border-desert-text/10;
 }
 
-::-webkit-scrollbar {
-  width: 8px;
-}
+@layer utilities {
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
 
-::-webkit-scrollbar-track {
-  @apply bg-desert-900;
-}
+  ::-webkit-scrollbar-track {
+    @apply bg-desert-900;
+  }
 
-::-webkit-scrollbar-thumb {
-  @apply bg-desert-primary/30 rounded-full hover:bg-desert-primary/50 transition-colors;
+  ::-webkit-scrollbar-thumb {
+    @apply bg-desert-primary/30 rounded-full hover:bg-desert-primary/50 transition-colors;
+  }
 }
