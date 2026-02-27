@@ -58,6 +58,19 @@ func main() {
 	db.InitDB()
 	db.InitCache()
 
+	// Ensure payloads directory exists for builders
+	if _, err := os.Stat("payloads"); os.IsNotExist(err) {
+		os.Mkdir("payloads", 0755)
+		log.Println("[+] Created 'payloads' directory")
+	}
+
+	appPass := os.Getenv("APP_PASSWORD")
+	if appPass == "" {
+		log.Println("[!] WARNING: APP_PASSWORD is not set. API is UNPROTECTED.")
+	} else {
+		log.Println("[+] Authentication is ENABLED.")
+	}
+
 	// Start C2 Listener
 	go c2.StartListener(*c2port)
 

@@ -25,6 +25,7 @@ func BuildGoAgent(osType, arch, c2Addr, outputPath string) error {
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		log.Printf("[!] Build error: %v\nOutput: %s", err, string(output))
 		return fmt.Errorf("build failed: %v\n%s", err, string(output))
 	}
 

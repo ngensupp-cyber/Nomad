@@ -12,13 +12,15 @@ const App = () => {
     const isASCII = (str) => /^[\x00-\x7F]*$/.test(str);
 
     if (password && !isASCII(password)) {
-      console.warn("Nomad: Password contains non-ASCII characters which may fail in HTTP headers.");
-    }
-
-    try {
-      axios.defaults.headers.common['X-Nomad-Pass'] = password;
-    } catch (e) {
-      console.error("Critical: Failed to set auth header", e);
+      console.warn("Nomad: Password contains non-ASCII characters. Blocked.");
+      // Do not set invalid header to avoid browser crash
+      delete axios.defaults.headers.common['X-Nomad-Pass'];
+    } else {
+      try {
+        axios.defaults.headers.common['X-Nomad-Pass'] = password;
+      } catch (e) {
+        console.error("Critical: Failed to set auth header", e);
+      }
     }
 
     fetchTargets();

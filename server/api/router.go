@@ -116,8 +116,15 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		pass := r.Header.Get("X-Nomad-Pass")
+		if pass == "" {
+			log.Printf("[!] Auth denied for %s: Mission header X-Nomad-Pass", r.RemoteAddr)
+			http.Error(w, "Unauthorized: Mission header", http.StatusUnauthorized)
+			return
+		}
+
 		if pass != appPass {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			log.Printf("[!] Auth denied for %s: Password mismatch", r.RemoteAddr)
+			http.Error(w, "Unauthorized: Password mismatch", http.StatusUnauthorized)
 			return
 		}
 		next.ServeHTTP(w, r)
