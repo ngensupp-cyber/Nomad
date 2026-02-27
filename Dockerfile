@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y \
     mingw-w64 \
     openjdk-11-jdk \
     python3 python3-pip \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Step 4: Install Smali/Baksmali for APK building
@@ -26,10 +28,14 @@ RUN wget https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/li
 # Step 6: Create working directory
 WORKDIR /app
 
-# Step 7: Copy the C2 server source code
-COPY . .
+# Step 7: Build React Dashboard
+COPY dashboard/package*.json ./dashboard/
+RUN cd dashboard && npm install
+COPY dashboard/ ./dashboard/
+RUN cd dashboard && npm run build
 
 # Step 8: Build the Go Server
+COPY . .
 RUN go mod tidy && go build -o nomad-c2 server/main.go
 
 # Step 9: Expose ports

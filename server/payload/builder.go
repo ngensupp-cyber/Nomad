@@ -6,9 +6,7 @@ import (
 	"os/exec"
 )
 
-func BuildGoAgent(osType, arch, unused, outputPath string) error {
-	c2Addr := "gondola.proxy.rlwy.net:37431"
-	
+func BuildGoAgent(osType, arch, c2Addr, outputPath string) error {
 	// Prepare build command
 	// Note: We need to use the absolute or correct relative path to agents/main.go
 	cmd := exec.Command("go", "build", "-ldflags", fmt.Sprintf("-X main.serverAddr=%s", c2Addr), "-o", outputPath, "agents/main.go")

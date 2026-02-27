@@ -147,42 +147,86 @@ const StatCard = ({ label, value, color }) => (
   </div>
 );
 
-const PayloadView = () => (
-  <div className="max-w-4xl mx-auto glass p-10 rounded-[3rem] space-y-8 animate-in slide-in-from-bottom-10 duration-700">
-    <div className="text-center space-y-2">
-      <h3 className="text-3xl font-bold text-desert-primary">Nomad Lab</h3>
-      <p className="opacity-60">Forge your digital tools for any terrain.</p>
-    </div>
+const PayloadView = () => {
+  const [platform, setPlatform] = useState('windows');
+  const [c2Addr, setC2Addr] = useState('localhost:5555');
+  const [isGenerating, setIsGenerating] = useState(false);
 
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-      <div className="space-y-4">
-        <label className="text-xs font-bold uppercase tracking-widest opacity-60 ml-2">Select Platform</label>
-        <div className="grid grid-cols-2 gap-4">
-          <PlatformButton label="Windows" active />
-          <PlatformButton label="Linux" />
-          <PlatformButton label="Android" />
-          <PlatformButton label="MacOS" />
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await axios.post('/api/payloads', {
+        os: platform.toLowerCase(),
+        arch: 'amd64',
+        c2_addr: c2Addr
+      }, { responseType: 'blob' });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `nomad_agent_${platform.toLowerCase()}.exe`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error("Payload generation failed", err);
+      alert("Generation failed. Check server logs.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto glass p-10 rounded-[3rem] space-y-8 animate-in slide-in-from-bottom-10 duration-700">
+      <div className="text-center space-y-2">
+        <h3 className="text-3xl font-bold text-desert-primary">Nomad Lab</h3>
+        <p className="opacity-60">Forge your digital tools for any terrain.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <div className="space-y-4">
+          <label className="text-xs font-bold uppercase tracking-widest opacity-60 ml-2">Select Platform</label>
+          <div className="grid grid-cols-2 gap-4">
+            <PlatformButton label="Windows" active={platform === 'windows'} onClick={() => setPlatform('windows')} />
+            <PlatformButton label="Linux" active={platform === 'linux'} onClick={() => setPlatform('linux')} />
+            <PlatformButton label="Android" active={platform === 'android'} onClick={() => setPlatform('android')} />
+            <PlatformButton label="MacOS" active={platform === 'macos'} onClick={() => setPlatform('macos')} />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <label className="text-xs font-bold uppercase tracking-widest opacity-60 ml-2">Configuration</label>
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={c2Addr}
+              onChange={(e) => setC2Addr(e.target.value)}
+              placeholder="C2 Address (e.g. localhost:5555)"
+              className="w-full glass bg-desert-900/50 p-4 rounded-2xl border-none outline-none focus:ring-1 ring-desert-primary/50"
+            />
+            <div className="p-4 glass rounded-2xl text-[10px] opacity-60 italic bg-desert-primary/5">
+              Tip: Use localhost:5555 for local port forwarding.
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <label className="text-xs font-bold uppercase tracking-widest opacity-60 ml-2">Configuration</label>
-        <div className="space-y-3">
-          <input type="text" placeholder="LHOST (Server IP/Domain)" className="w-full glass bg-desert-900/50 p-4 rounded-2xl border-none outline-none focus:ring-1 ring-desert-primary/50" />
-          <input type="text" placeholder="LPORT (Default: 5555)" className="w-full glass bg-desert-900/50 p-4 rounded-2xl border-none outline-none focus:ring-1 ring-desert-primary/50" />
-        </div>
-      </div>
+      <button
+        disabled={isGenerating}
+        onClick={handleGenerate}
+        className="w-full py-5 bg-desert-primary text-desert-900 font-bold rounded-2xl text-lg hover:bg-desert-accent transition-all transform hover:-translate-y-1 active:translate-y-0 shadow-lg shadow-desert-primary/20 disabled:opacity-50"
+      >
+        {isGenerating ? 'BUILDING AGENT...' : 'GENERATE PAYLOAD'}
+      </button>
     </div>
+  );
+};
 
-    <button className="w-full py-5 bg-desert-primary text-desert-900 font-bold rounded-2xl text-lg hover:bg-desert-accent transition-all transform hover:-translate-y-1 active:translate-y-0 shadow-lg shadow-desert-primary/20">
-      GENERATE PAYLOAD
-    </button>
-  </div>
-);
-
-const PlatformButton = ({ label, active }) => (
-  <button className={`p-6 rounded-2xl border transition-all ${active ? 'border-desert-primary bg-desert-primary/10 text-desert-primary' : 'border-desert-text/10 hover:border-desert-text/30'
-    }`}>
+const PlatformButton = ({ label, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`p-6 rounded-2xl border transition-all ${active ? 'border-desert-primary bg-desert-primary/10 text-desert-primary' : 'border-desert-text/10 hover:border-desert-text/30'
+      }`}>
     <span className="text-lg font-bold">{label}</span>
   </button>
 );

