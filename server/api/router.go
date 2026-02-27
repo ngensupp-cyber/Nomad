@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"nomad-c2/server/db"
 	"nomad-c2/server/payload"
